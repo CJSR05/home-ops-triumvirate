@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  # VPN GATEWAY: All outgoing traffic is encrypted
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 32400:32400 # Plex
+      - 9091:9091   # Transmission
+      - 8989:8989   # Sonarr
+      - 7878:7878   # Radarr
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${VPN_PRIVATE_KEY} # [SECRET REDACTED]
+      - WIREGUARD_ADDRESSES=${VPN_ADDRESS}      # [SECRET REDACTED]
+      - VPN_PORT_FORWARDING=on
+    restart: always
+
+  # MEDIA SERVER: Routed through VPN for privacy
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: service:gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+    volumes:
+      - plex_config:/config
+      - /mnt/media-storage:/media # Manual Host Mount
+    restart: unless-stopped
+
+  # DOWNLOAD CLIENT: Network Killswitch active
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    network_mode: service:gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - transmission_config:/config
+      - /mnt/media-storage/downloads:/downloads
+    restart: unless-stopped
+
+volumes:
+  plex_config:
+  transmission_config:

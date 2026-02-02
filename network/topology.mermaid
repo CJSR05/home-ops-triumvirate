@@ -1,0 +1,23 @@
+graph TD
+    subgraph LAN [192.168.1.0/24]
+        R[Router Gateway] --> S[Managed Switch]
+        S --> N1[Node 1: The Brain]
+        S --> N2[Node 2: The Shield]
+        S --> N3[Node 3: The Beast]
+        
+        N1 --> PI[LXC: Pi-hole DNS]
+        N1 --> HP[LXC: Homepage NOC]
+        
+        N2 --> HA[VM: Home Assistant]
+        N2 --> UC[LXC: UniFi Controller]
+        
+        N3 --> NB[LXC: NetBox IPAM]
+        N3 --> DS[Docker: Media Stack]
+        DS --> VPN[Gluetun WireGuard Tunnel]
+    end
+
+    subgraph Storage
+        N3 --- EXT[4TB Seagate Media Library]
+    end
+
+    style N3 fill:#f96,stroke:#333,stroke-width:4px
